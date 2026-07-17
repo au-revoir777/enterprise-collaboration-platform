@@ -29,7 +29,7 @@ public class ChannelMember {
     private Channel channel;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="added_by")
+    @JoinColumn(name="added_by",nullable=false)
     private User addedBy;
 
     @Column(nullable = false)
