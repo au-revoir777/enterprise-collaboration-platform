@@ -10,11 +10,16 @@ import com.example.platform.entity.UserStatus;
 import com.example.platform.entity.User;
 import com.example.platform.entity.Role;
 import com.example.platform.exception.EmailAlreadyExistsException;
+import com.example.platform.exception.InvalidCredentialsException;
 import com.example.platform.exception.PasswordMismatchException;
 import com.example.platform.exception.UsernameAlreadyExistsException;
 import com.example.platform.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import com.example.platform.dto.LoginRequest;
+import com.example.platform.dto.LoginResponse;
+import java.util.Optional;
 
 
 @Service
@@ -22,6 +27,17 @@ import org.springframework.stereotype.Service;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
+    private UserResponse mapToUserResponse(User user) {
+    return UserResponse.builder()
+            .id(user.getId())
+            .username(user.getUsername())
+            .displayName(user.getDisplayName())
+            .email(user.getEmail())
+            .role(user.getRole())
+            .status(user.getStatus())
+            .build();
+    }
 
     @Override
     public UserResponse register(RegisterRequest request) {
@@ -49,15 +65,8 @@ public class UserServiceImpl implements UserService {
 
         User savedUser = userRepository.save(user);
         
-        return UserResponse.builder()
-        .id(savedUser.getId())
-        .username(savedUser.getUsername())
-        .displayName(savedUser.getDisplayName())
-        .email(savedUser.getEmail())
-        .role(savedUser.getRole())
-        .status(savedUser.getStatus())
-        .profilePictureUrl(savedUser.getProfilePictureUrl())
-        .build();
+        UserResponse response = mapToUserResponse(savedUser);
+        return response;
     }
 
     @Override
@@ -68,5 +77,37 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse getUserByUsername(String username) {
         throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public LoginResponse login(LoginRequest request){
+        String identifier = request.getIdentifier();
+        User user;
+        Optional<User> optionalUser;
+
+        if (identifier.contains("@")) {
+            optionalUser = userRepository.findByEmail(identifier);
+        } else {
+            optionalUser = userRepository.findByUsername(identifier);
+        }
+
+        user = optionalUser.orElseThrow(() ->
+                new InvalidCredentialsException(
+                    "Invalid username/email or password."
+                ));
+
+        if(passwordEncoder.matches(request.getPassword(),user.getPassword())){
+            String token = ""; // todo: implement jwt
+            
+            UserResponse response = mapToUserResponse(user);
+
+            return LoginResponse.builder()
+            .token(token)
+            .user(response)
+            .build();
+
+        } else {
+            throw new InvalidCredentialsException("Invalid username/email or password.");
+        }
     }
 }

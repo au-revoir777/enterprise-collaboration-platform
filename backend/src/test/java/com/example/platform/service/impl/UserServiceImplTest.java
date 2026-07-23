@@ -13,10 +13,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.example.platform.dto.LoginRequest;
+import com.example.platform.dto.LoginResponse;
 import com.example.platform.dto.RegisterRequest;
 import com.example.platform.dto.UserResponse;
 import com.example.platform.entity.UserStatus;
 import com.example.platform.exception.EmailAlreadyExistsException;
+import com.example.platform.exception.InvalidCredentialsException;
 import com.example.platform.exception.PasswordMismatchException;
 import com.example.platform.exception.UsernameAlreadyExistsException;
 import com.example.platform.repository.UserRepository;
@@ -24,9 +27,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import com.example.platform.entity.User;
 import com.example.platform.entity.Role;
 
+import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceImplTest {
+
+    private LoginRequest createValidLoginRequest() {
+        return LoginRequest.builder()
+                .identifier("roshan")
+                .password("password123")
+                .build();
+    }
 
     private RegisterRequest createValidRequest() {
         return RegisterRequest.builder()
@@ -59,7 +70,7 @@ public class UserServiceImplTest {
 
     @InjectMocks
     private UserServiceImpl userService;
-    
+
     @Test
     void shouldThrowEmailAlreadyExistsException() {
 
@@ -72,8 +83,7 @@ public class UserServiceImplTest {
         // Act & Assert
         assertThrows(
                 EmailAlreadyExistsException.class,
-                () -> userService.register(request)
-        );
+                () -> userService.register(request));
 
         // Verify
         verify(userRepository).existsByEmail(request.getEmail());
@@ -85,22 +95,21 @@ public class UserServiceImplTest {
     @Test
     void shouldThrowUsernameAlreadyExistsException() {
         RegisterRequest request = createValidRequest();
-        
+
         when(userRepository.existsByEmail(request.getEmail()))
                 .thenReturn(false);
         when(userRepository.existsByUsername(request.getUsername()))
                 .thenReturn(true);
 
         assertThrows(
-            UsernameAlreadyExistsException.class,
-                () -> userService.register(request)
-        );
+                UsernameAlreadyExistsException.class,
+                () -> userService.register(request));
 
         verify(userRepository).existsByEmail(request.getEmail());
         verify(userRepository).existsByUsername(request.getUsername());
         verify(userRepository, never()).save(any(User.class));
         verify(passwordEncoder, never()).encode(anyString());
-        
+
     }
 
     @Test
@@ -112,17 +121,16 @@ public class UserServiceImplTest {
                 .password("password123")
                 .confirmPassword("password1234")
                 .build();
-                
+
         when(userRepository.existsByEmail(request.getEmail()))
-        .thenReturn(false);
+                .thenReturn(false);
 
         when(userRepository.existsByUsername(request.getUsername()))
-        .thenReturn(false); 
+                .thenReturn(false);
 
         assertThrows(
-            PasswordMismatchException.class,
-                () -> userService.register(request)
-        );
+                PasswordMismatchException.class,
+                () -> userService.register(request));
 
         verify(userRepository).existsByEmail(request.getEmail());
         verify(userRepository).existsByUsername(request.getUsername());
@@ -135,18 +143,18 @@ public class UserServiceImplTest {
         RegisterRequest request = createValidRequest();
 
         when(userRepository.existsByEmail(request.getEmail()))
-        .thenReturn(false);
+                .thenReturn(false);
 
         when(userRepository.existsByUsername(request.getUsername()))
-        .thenReturn(false);
+                .thenReturn(false);
 
         when(passwordEncoder.encode(request.getPassword()))
-        .thenReturn("hashedPassword");
+                .thenReturn("hashedPassword");
 
         User savedUser = createSavedUser();
 
         when(userRepository.save(any(User.class)))
-        .thenReturn(savedUser);
+                .thenReturn(savedUser);
 
         userService.register(request);
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
@@ -154,7 +162,7 @@ public class UserServiceImplTest {
         User capturedUser = captor.getValue();
 
         assertEquals("hashedPassword", capturedUser.getPassword());
-        assertNotEquals(request.getPassword(),capturedUser.getPassword());
+        assertNotEquals(request.getPassword(), capturedUser.getPassword());
         assertEquals(request.getUsername(), capturedUser.getUsername());
         assertEquals(request.getEmail(), capturedUser.getEmail());
         assertEquals(request.getDisplayName(), capturedUser.getDisplayName());
@@ -171,16 +179,16 @@ public class UserServiceImplTest {
         User savedUser = createSavedUser();
 
         when(userRepository.existsByEmail(request.getEmail()))
-        .thenReturn(false);
+                .thenReturn(false);
 
         when(userRepository.existsByUsername(request.getUsername()))
-        .thenReturn(false);
+                .thenReturn(false);
 
         when(passwordEncoder.encode(request.getPassword()))
-        .thenReturn("hashedPassword");
+                .thenReturn("hashedPassword");
 
         when(userRepository.save(any(User.class)))
-        .thenReturn(savedUser);
+                .thenReturn(savedUser);
 
         UserResponse response = userService.register(request);
 
@@ -193,6 +201,130 @@ public class UserServiceImplTest {
 
         verify(userRepository).save(any(User.class));
         verify(passwordEncoder).encode(request.getPassword());
+    }
+
+    @Test
+    void shouldLoginSuccessfullyUsingUsername() {
+        // Arrange
+        LoginRequest request = createValidLoginRequest();
+
+        User savedUser = createSavedUser();
+
+        when(userRepository.findByUsername(request.getIdentifier()))
+                .thenReturn(Optional.of(savedUser));
+
+        when(passwordEncoder.matches(
+                request.getPassword(),
+                savedUser.getPassword()))
+                .thenReturn(true);
+
+        // Act
+        LoginResponse response = userService.login(request);
+
+        // Assert
+        assertNotNull(response);
+        assertNotNull(response.getUser());
+
+        assertEquals(savedUser.getUsername(),
+                response.getUser().getUsername());
+
+        assertEquals(savedUser.getEmail(),
+                response.getUser().getEmail());
+
+        verify(userRepository).findByUsername(request.getIdentifier());
+
+        verify(userRepository, never())
+                .findByEmail(anyString());
+
+        verify(passwordEncoder)
+                .matches(request.getPassword(), savedUser.getPassword());
+    }
+
+    @Test
+    void shouldLoginSuccessfullyUsingEmail() {
+        // Arrange
+        LoginRequest request = createValidLoginRequest();
+        request.setIdentifier("roshan@example.com");
+
+        User savedUser = createSavedUser();
+
+        when(userRepository.findByEmail(request.getIdentifier()))
+                .thenReturn(Optional.of(savedUser));
+
+        when(passwordEncoder.matches(
+                request.getPassword(),
+                savedUser.getPassword()))
+                .thenReturn(true);
+
+        // Act
+        LoginResponse response = userService.login(request);
+
+        // Assert
+        assertNotNull(response);
+        assertNotNull(response.getUser());
+
+        assertEquals(savedUser.getEmail(),
+                response.getUser().getEmail());
+
+        assertEquals(savedUser.getUsername(),
+                response.getUser().getUsername());
+
+        verify(userRepository).findByEmail(request.getIdentifier());
+
+        verify(userRepository, never())
+                .findByUsername(anyString());
+
+        verify(passwordEncoder)
+                .matches(request.getPassword(), savedUser.getPassword());
+    }
+
+    @Test
+    void shouldThrowInvalidCredentialsExceptionWhenUserDoesNotExist() {
+
+        LoginRequest request = createValidLoginRequest();
+        when(userRepository.findByUsername(request.getIdentifier()))
+                .thenReturn(Optional.empty());
+        assertThrows(
+                InvalidCredentialsException.class,
+                () -> userService.login(request));
+        verify(userRepository).findByUsername(request.getIdentifier());
+        verify(passwordEncoder, never())
+                .matches(anyString(), anyString());
+    }
+
+    @Test
+    void shouldThrowInvalidCredentialsExceptionWhenPasswordIsIncorrect() {
+        LoginRequest request = createValidLoginRequest();
+        User savedUser = createSavedUser();
+        when(userRepository.findByUsername(request.getIdentifier()))
+                .thenReturn(Optional.of(savedUser));
+        when(passwordEncoder.matches(
+                request.getPassword(),
+                savedUser.getPassword()))
+                .thenReturn(false);
+        assertThrows(
+                InvalidCredentialsException.class,
+                () -> userService.login(request));
+        verify(userRepository).findByUsername(request.getIdentifier());
+        verify(passwordEncoder)
+                .matches(request.getPassword(), savedUser.getPassword());
+    }
+
+    @Test
+    void shouldThrowInvalidCredentialsExceptionWhenEmailDoesNotExist(){
+                LoginRequest request = createValidLoginRequest();
+                request.setIdentifier("roshan@example.com");
+
+        when(userRepository.findByEmail(request.getIdentifier()))
+                .thenReturn(Optional.empty());
+                
+        assertThrows(
+                InvalidCredentialsException.class,
+                () -> userService.login(request));
+
+        verify(userRepository).findByEmail(request.getIdentifier());
+
+        verify(userRepository, never()).findByUsername(anyString());
     }
 
 }
