@@ -38,7 +38,11 @@ function Login() {
 
             await AuthService.login(form);
 
-            navigate("/chat");
+            const user = await AuthService.getCurrentUser();
+
+            console.log(user);
+
+            navigate("/dashboard");
 
         } catch (err: any) {
 

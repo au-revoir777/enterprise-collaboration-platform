@@ -23,6 +23,8 @@ import com.example.platform.exception.InvalidCredentialsException;
 import com.example.platform.exception.PasswordMismatchException;
 import com.example.platform.exception.UsernameAlreadyExistsException;
 import com.example.platform.repository.UserRepository;
+import com.example.platform.security.JwtService;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.example.platform.entity.User;
 import com.example.platform.entity.Role;
@@ -70,6 +72,9 @@ public class UserServiceImplTest {
 
     @InjectMocks
     private UserServiceImpl userService;
+
+    @Mock
+    private JwtService jwtService;
 
     @Test
     void shouldThrowEmailAlreadyExistsException() {
@@ -218,12 +223,17 @@ public class UserServiceImplTest {
                 savedUser.getPassword()))
                 .thenReturn(true);
 
+        when(jwtService.generateToken(savedUser))
+        .thenReturn("mock-jwt-token");
+
         // Act
         LoginResponse response = userService.login(request);
 
         // Assert
         assertNotNull(response);
         assertNotNull(response.getUser());
+
+        assertEquals("mock-jwt-token", response.getToken());
 
         assertEquals(savedUser.getUsername(),
                 response.getUser().getUsername());
@@ -238,6 +248,8 @@ public class UserServiceImplTest {
 
         verify(passwordEncoder)
                 .matches(request.getPassword(), savedUser.getPassword());
+
+        verify(jwtService).generateToken(savedUser);
     }
 
     @Test
@@ -255,6 +267,9 @@ public class UserServiceImplTest {
                 request.getPassword(),
                 savedUser.getPassword()))
                 .thenReturn(true);
+        
+        when(jwtService.generateToken(savedUser))
+        .thenReturn("mock-jwt-token");
 
         // Act
         LoginResponse response = userService.login(request);
@@ -269,6 +284,8 @@ public class UserServiceImplTest {
         assertEquals(savedUser.getUsername(),
                 response.getUser().getUsername());
 
+        assertEquals("mock-jwt-token", response.getToken());
+
         verify(userRepository).findByEmail(request.getIdentifier());
 
         verify(userRepository, never())
@@ -276,6 +293,8 @@ public class UserServiceImplTest {
 
         verify(passwordEncoder)
                 .matches(request.getPassword(), savedUser.getPassword());
+        
+        verify(jwtService).generateToken(savedUser);
     }
 
     @Test
@@ -290,6 +309,7 @@ public class UserServiceImplTest {
         verify(userRepository).findByUsername(request.getIdentifier());
         verify(passwordEncoder, never())
                 .matches(anyString(), anyString());
+        verify(jwtService, never()).generateToken(any(User.class));
     }
 
     @Test
@@ -308,6 +328,7 @@ public class UserServiceImplTest {
         verify(userRepository).findByUsername(request.getIdentifier());
         verify(passwordEncoder)
                 .matches(request.getPassword(), savedUser.getPassword());
+        verify(jwtService, never()).generateToken(any(User.class));
     }
 
     @Test
@@ -325,6 +346,7 @@ public class UserServiceImplTest {
         verify(userRepository).findByEmail(request.getIdentifier());
 
         verify(userRepository, never()).findByUsername(anyString());
+        verify(jwtService, never()).generateToken(any(User.class));
     }
 
 }

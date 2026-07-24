@@ -14,11 +14,14 @@ import com.example.platform.exception.InvalidCredentialsException;
 import com.example.platform.exception.PasswordMismatchException;
 import com.example.platform.exception.UsernameAlreadyExistsException;
 import com.example.platform.repository.UserRepository;
+import com.example.platform.security.JwtService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.example.platform.dto.LoginRequest;
 import com.example.platform.dto.LoginResponse;
+
 import java.util.Optional;
 
 
@@ -27,6 +30,7 @@ import java.util.Optional;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     private UserResponse mapToUserResponse(User user) {
     return UserResponse.builder()
@@ -97,7 +101,8 @@ public class UserServiceImpl implements UserService {
                 ));
 
         if(passwordEncoder.matches(request.getPassword(),user.getPassword())){
-            String token = ""; // todo: implement jwt
+
+            String token = jwtService.generateToken(user);
             
             UserResponse response = mapToUserResponse(user);
 

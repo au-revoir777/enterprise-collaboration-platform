@@ -13,7 +13,19 @@ class AuthService {
 
     async login(request: LoginRequest): Promise<LoginResponse> {
         const response = await axios.post<LoginResponse>("/auth/login",request);
+        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("user", JSON.stringify(response.data.userResponse));
         return response.data;
+    }
+
+    async getCurrentUser(): Promise<UserResponse> {
+        const response = await axios.get<UserResponse>("/users/me");
+        return response.data;
+    }
+
+    logout(): void {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
     }
 }
 
