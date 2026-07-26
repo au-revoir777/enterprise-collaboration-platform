@@ -23,7 +23,7 @@ public class Workspace {
     @Column(length=200)
     private String description;
 
-    @Column
+    @Column(length=500)
     private String logoUrl;
 
     @Enumerated(EnumType.STRING)
