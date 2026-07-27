@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
+
 import Register from "../pages/Register/Register";
 import Login from "../pages/Login/Login";
-import Dashboard from "../pages/Workspace/WorkspaceDashboard";
+import WorkspaceDashboard from "../pages/Workspace/WorkspaceDashboard";
 import CreateWorkspace from "../pages/Workspace/CreateWorkspace";
 
 function AppRoutes() {
@@ -10,7 +11,7 @@ function AppRoutes() {
     <BrowserRouter>
       <Routes>
         {/* Redirect "/" to "/register" */}
-        <Route path="/" element={<Navigate to="/register" replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
         {/* Register Page */}
         <Route path="/register" element={<Register />} />
@@ -19,7 +20,7 @@ function AppRoutes() {
         <Route path="/login" element={<Login />} />
 
         {/* Dashboard */}
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/dashboard" element={<WorkspaceDashboard />} />
 
         <Route path="/workspaces/new" element={<CreateWorkspace />} />
       </Routes>

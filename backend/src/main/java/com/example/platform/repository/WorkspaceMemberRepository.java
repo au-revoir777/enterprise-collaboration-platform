@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.example.platform.entity.WorkspaceMember;
 import com.example.platform.entity.WorkspaceRole;
 import com.example.platform.entity.Workspace;
+import com.example.platform.dto.workspace.WorkspaceResponse;
 import com.example.platform.entity.User;
 
 
@@ -18,5 +19,5 @@ public interface WorkspaceMemberRepository extends JpaRepository<WorkspaceMember
     //from a particular workspace
     boolean existsByWorkspaceAndUser(Workspace workspace,User user); //check membership
     Optional<WorkspaceMember> findByWorkspaceAndUser(Workspace workspace,User user); // get a specific membership
-    
+    List<WorkspaceMember> findByUser(User user);    
 }

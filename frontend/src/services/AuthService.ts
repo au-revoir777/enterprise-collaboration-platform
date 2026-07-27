@@ -1,4 +1,4 @@
-import axios from "../api/axios";
+import api from "../api/axios";
 
 import type { RegisterRequest } from "../types/RegisterRequest";
 import type { UserResponse } from "../types/UserResponse";
@@ -7,19 +7,19 @@ import type { LoginResponse } from "../types/LoginResponse";
 
 class AuthService {
     async register(request: RegisterRequest): Promise<UserResponse> {
-        const response = await axios.post<UserResponse>("/auth/register",request);
+        const response = await api.post<UserResponse>("/auth/register",request);
         return response.data;
     }
 
     async login(request: LoginRequest): Promise<LoginResponse> {
-        const response = await axios.post<LoginResponse>("/auth/login",request);
+        const response = await api.post<LoginResponse>("/auth/login",request);
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("user", JSON.stringify(response.data.userResponse));
         return response.data;
     }
 
     async getCurrentUser(): Promise<UserResponse> {
-        const response = await axios.get<UserResponse>("/users/me");
+        const response = await api.get<UserResponse>("/users/me");
         return response.data;
     }
 
