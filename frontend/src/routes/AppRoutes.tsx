@@ -1,10 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-
 import Register from "../pages/Register/Register";
 import Login from "../pages/Login/Login";
 import WorkspaceDashboard from "../pages/Workspace/WorkspaceDashboard";
 import CreateWorkspace from "../pages/Workspace/CreateWorkspace";
+import CreateChannel from "../pages/Channel/CreateChannel";
 
 function AppRoutes() {
   return (
@@ -23,6 +23,10 @@ function AppRoutes() {
         <Route path="/dashboard" element={<WorkspaceDashboard />} />
 
         <Route path="/workspaces/new" element={<CreateWorkspace />} />
+        <Route
+          path="/workspaces/:workspaceId/channels/new"
+          element={<CreateChannel />}
+        />
       </Routes>
     </BrowserRouter>
   );
