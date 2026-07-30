@@ -18,6 +18,17 @@ class ChannelService {
         return response.data;
     }
 
+    async getWorkspaceChannels(
+    workspaceId: number
+    ): Promise<ChannelResponse[]> {
+
+        const response = await api.get<ChannelResponse[]>(
+            `/workspaces/${workspaceId}/channels`
+        );
+
+        return response.data;
+    }   
+
 }
 
 export default new ChannelService();

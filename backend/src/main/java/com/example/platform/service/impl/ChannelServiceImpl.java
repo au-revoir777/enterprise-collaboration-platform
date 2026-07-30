@@ -19,6 +19,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 
 @Transactional
@@ -73,6 +74,18 @@ public class ChannelServiceImpl implements ChannelService{
                 
                 channelMemberRepository.save(member);
                 return response;
+    }
+
+    public List<ChannelResponse> getWorkspaceChannels(Long workspaceId, User user){
+        Workspace workspace = workspaceRepository.findById(workspaceId).orElseThrow(
+            ()->new WorkspaceNotFoundException("Workspace does not exist."));
+        if(!workspaceMemberRepository.existsByWorkspaceAndUser(workspace,user)){
+            throw new AccessDeniedException("You don't have access to this workspace.");
+        }
+        List<Channel> channels = channelRepository.findByWorkspace(workspace);
+        return channels.stream()
+        .map(this::mapToChannelResponse)
+        .toList();
     }
 
 }

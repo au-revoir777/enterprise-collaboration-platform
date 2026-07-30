@@ -3,6 +3,7 @@ package com.example.platform.service.impl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -32,198 +33,267 @@ import com.example.platform.entity.ChannelMember;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-
-
+import java.util.List;
 
 import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 public class ChannelServiceImplTest {
-    private User createUser() {
-    return User.builder()
-            .id(1L)
-            .username("roshan")
-            .displayName("Roshan")
-            .email("roshan@example.com")
-            .build();
-}
+        private User createUser() {
+                return User.builder()
+                                .id(1L)
+                                .username("roshan")
+                                .displayName("Roshan")
+                                .email("roshan@example.com")
+                                .build();
+        }
 
-    private Workspace createWorkspace(User owner) {
-        return Workspace.builder()
-                .id(1L)
-                .name("Platform")
-                .description("Platform Workspace")
-                .owner(owner)
-                .type(WorkspaceType.PRIVATE)
-                .build();
-    }
+        private Workspace createWorkspace(User owner) {
+                return Workspace.builder()
+                                .id(1L)
+                                .name("Platform")
+                                .description("Platform Workspace")
+                                .owner(owner)
+                                .type(WorkspaceType.PRIVATE)
+                                .build();
+        }
 
-    private CreateChannelRequest createChannelRequest() {
-        return CreateChannelRequest.builder()
-                .name("backend")
-                .description("Backend discussions")
-                .type(ChannelType.PUBLIC)
-                .build();
-    }
+        private CreateChannelRequest createChannelRequest() {
+                return CreateChannelRequest.builder()
+                                .name("backend")
+                                .description("Backend discussions")
+                                .type(ChannelType.PUBLIC)
+                                .build();
+        }
 
-    private Channel createChannel(User user, Workspace workspace) {
-        return Channel.builder()
-                .id(1L)
-                .name("backend")
-                .description("Backend discussions")
-                .type(ChannelType.PUBLIC)
-                .workspace(workspace)
-                .createdBy(user)
-                .build();
-    }
+        private Channel createChannel(User user, Workspace workspace) {
+                return Channel.builder()
+                                .id(1L)
+                                .name("backend")
+                                .description("Backend discussions")
+                                .type(ChannelType.PUBLIC)
+                                .workspace(workspace)
+                                .createdBy(user)
+                                .build();
+        }
 
-    @Mock
-    private WorkspaceRepository workspaceRepository;
+        @Mock
+        private WorkspaceRepository workspaceRepository;
 
-    @Mock
-    private WorkspaceMemberRepository workspaceMemberRepository;
+        @Mock
+        private WorkspaceMemberRepository workspaceMemberRepository;
 
-    @Mock
-    private ChannelRepository channelRepository;
+        @Mock
+        private ChannelRepository channelRepository;
 
-    @Mock
-    private ChannelMemberRepository channelMemberRepository;
+        @Mock
+        private ChannelMemberRepository channelMemberRepository;
 
-    @InjectMocks
-    private ChannelServiceImpl channelService;
+        @InjectMocks
+        private ChannelServiceImpl channelService;
 
-    @Test
-    void shouldCreateChannelSuccessfully() {
+        @Test
+        void shouldCreateChannelSuccessfully() {
 
-        User user = createUser();
-        Workspace workspace = createWorkspace(user);
-        CreateChannelRequest request = createChannelRequest();
-        Channel savedChannel = createChannel(user, workspace);
+                User user = createUser();
+                Workspace workspace = createWorkspace(user);
+                CreateChannelRequest request = createChannelRequest();
+                Channel savedChannel = createChannel(user, workspace);
 
-        when(workspaceRepository.findById(workspace.getId()))
-                .thenReturn(Optional.of(workspace));
+                when(workspaceRepository.findById(workspace.getId()))
+                                .thenReturn(Optional.of(workspace));
 
-        when(workspaceMemberRepository.existsByWorkspaceAndUser(workspace, user))
-                .thenReturn(true);
+                when(workspaceMemberRepository.existsByWorkspaceAndUser(workspace, user))
+                                .thenReturn(true);
 
-        when(channelRepository.existsByNameAndWorkspace(request.getName(), workspace))
-                .thenReturn(false);
+                when(channelRepository.existsByNameAndWorkspace(request.getName(), workspace))
+                                .thenReturn(false);
 
-        when(channelRepository.save(any(Channel.class)))
-                .thenReturn(savedChannel);
+                when(channelRepository.save(any(Channel.class)))
+                                .thenReturn(savedChannel);
 
-        ChannelResponse response =
+                ChannelResponse response = channelService.createChannel(workspace.getId(), request, user);
+
+                assertNotNull(response);
+
+                assertEquals(savedChannel.getId(), response.getId());
+                assertEquals(savedChannel.getName(), response.getName());
+                assertEquals(savedChannel.getDescription(), response.getDescription());
+                assertEquals(savedChannel.getType(), response.getType());
+                assertEquals(workspace.getId(), response.getWorkspaceId());
+
+                verify(channelRepository).save(any(Channel.class));
+                verify(channelMemberRepository).save(any(ChannelMember.class));
+        }
+
+        @Test
+        void shouldAutomaticallyAddCreatorAsChannelMember() {
+
+                User user = createUser();
+                Workspace workspace = createWorkspace(user);
+                CreateChannelRequest request = createChannelRequest();
+                Channel savedChannel = createChannel(user, workspace);
+
+                when(workspaceRepository.findById(workspace.getId()))
+                                .thenReturn(Optional.of(workspace));
+
+                when(workspaceMemberRepository.existsByWorkspaceAndUser(workspace, user))
+                                .thenReturn(true);
+
+                when(channelRepository.existsByNameAndWorkspace(request.getName(), workspace))
+                                .thenReturn(false);
+
+                when(channelRepository.save(any(Channel.class)))
+                                .thenReturn(savedChannel);
+
                 channelService.createChannel(workspace.getId(), request, user);
 
-        assertNotNull(response);
+                ArgumentCaptor<ChannelMember> captor = ArgumentCaptor.forClass(ChannelMember.class);
 
-        assertEquals(savedChannel.getId(), response.getId());
-        assertEquals(savedChannel.getName(), response.getName());
-        assertEquals(savedChannel.getDescription(), response.getDescription());
-        assertEquals(savedChannel.getType(), response.getType());
-        assertEquals(workspace.getId(), response.getWorkspaceId());
+                verify(channelMemberRepository).save(captor.capture());
 
-        verify(channelRepository).save(any(Channel.class));
-        verify(channelMemberRepository).save(any(ChannelMember.class));
-    }
+                ChannelMember member = captor.getValue();
 
-    @Test
-    void shouldAutomaticallyAddCreatorAsChannelMember() {
+                assertEquals(user, member.getUser());
+                assertEquals(savedChannel, member.getChannel());
+                assertEquals(user, member.getAddedBy());
+        }
 
-        User user = createUser();
-        Workspace workspace = createWorkspace(user);
-        CreateChannelRequest request = createChannelRequest();
-        Channel savedChannel = createChannel(user, workspace);
+        @Test
+        void shouldThrowWorkspaceNotFoundException() {
 
-        when(workspaceRepository.findById(workspace.getId()))
-                .thenReturn(Optional.of(workspace));
+                User user = createUser();
+                CreateChannelRequest request = createChannelRequest();
 
-        when(workspaceMemberRepository.existsByWorkspaceAndUser(workspace, user))
-                .thenReturn(true);
+                when(workspaceRepository.findById(1L))
+                                .thenReturn(Optional.empty());
 
-        when(channelRepository.existsByNameAndWorkspace(request.getName(), workspace))
-                .thenReturn(false);
+                assertThrows(
+                                WorkspaceNotFoundException.class,
+                                () -> channelService.createChannel(1L, request, user));
 
-        when(channelRepository.save(any(Channel.class)))
-                .thenReturn(savedChannel);
+                verify(workspaceRepository).findById(1L);
 
-        channelService.createChannel(workspace.getId(), request, user);
+                verifyNoInteractions(
+                                workspaceMemberRepository,
+                                channelRepository,
+                                channelMemberRepository);
+        }
 
-        ArgumentCaptor<ChannelMember> captor =
-                ArgumentCaptor.forClass(ChannelMember.class);
+        @Test
+        void shouldThrowAccessDeniedExceptionWhenUserIsNotWorkspaceMember() {
 
-        verify(channelMemberRepository).save(captor.capture());
+                User user = createUser();
+                Workspace workspace = createWorkspace(user);
+                CreateChannelRequest request = createChannelRequest();
 
-        ChannelMember member = captor.getValue();
+                when(workspaceRepository.findById(workspace.getId()))
+                                .thenReturn(Optional.of(workspace));
 
-        assertEquals(user, member.getUser());
-        assertEquals(savedChannel, member.getChannel());
-        assertEquals(user, member.getAddedBy());
-    }
+                when(workspaceMemberRepository.existsByWorkspaceAndUser(workspace, user))
+                                .thenReturn(false);
 
-    @Test
-    void shouldThrowWorkspaceNotFoundException() {
+                assertThrows(
+                                org.springframework.security.access.AccessDeniedException.class,
+                                () -> channelService.createChannel(workspace.getId(), request, user));
 
-        User user = createUser();
-        CreateChannelRequest request = createChannelRequest();
+                verify(channelRepository, never()).save(any());
+                verify(channelMemberRepository, never()).save(any());
+        }
 
-        when(workspaceRepository.findById(1L))
-                .thenReturn(Optional.empty());
+        @Test
+        void shouldThrowChannelAlreadyExistsException() {
 
-        assertThrows(
-                WorkspaceNotFoundException.class,
-                () -> channelService.createChannel(1L, request, user));
+                User user = createUser();
+                Workspace workspace = createWorkspace(user);
+                CreateChannelRequest request = createChannelRequest();
 
-        verify(workspaceRepository).findById(1L);
+                when(workspaceRepository.findById(workspace.getId()))
+                                .thenReturn(Optional.of(workspace));
 
-        verifyNoInteractions(
-                workspaceMemberRepository,
-                channelRepository,
-                channelMemberRepository);
-    }
+                when(workspaceMemberRepository.existsByWorkspaceAndUser(workspace, user))
+                                .thenReturn(true);
 
-    @Test
-    void shouldThrowAccessDeniedExceptionWhenUserIsNotWorkspaceMember() {
+                when(channelRepository.existsByNameAndWorkspace(request.getName(), workspace))
+                                .thenReturn(true);
 
-        User user = createUser();
-        Workspace workspace = createWorkspace(user);
-        CreateChannelRequest request = createChannelRequest();
+                assertThrows(
+                                ChannelAlreadyExistsException.class,
+                                () -> channelService.createChannel(workspace.getId(), request, user));
 
-        when(workspaceRepository.findById(workspace.getId()))
-                .thenReturn(Optional.of(workspace));
+                verify(channelRepository, never()).save(any(Channel.class));
+                verify(channelMemberRepository, never()).save(any(ChannelMember.class));
+        }
 
-        when(workspaceMemberRepository.existsByWorkspaceAndUser(workspace, user))
-                .thenReturn(false);
+        @Test
+        void shouldReturnAllChannels() {
 
-        assertThrows(
-                org.springframework.security.access.AccessDeniedException.class,
-                () -> channelService.createChannel(workspace.getId(), request, user));
+                User user = createUser();
+                Workspace workspace = createWorkspace(user);
 
-        verify(channelRepository, never()).save(any());
-        verify(channelMemberRepository, never()).save(any());
-    }
+                Channel channel1 = Channel.builder()
+                                .id(1L)
+                                .name("general")
+                                .description("General discussions")
+                                .type(ChannelType.PUBLIC)
+                                .workspace(workspace)
+                                .createdBy(user)
+                                .build();
 
-    @Test
-    void shouldThrowChannelAlreadyExistsException() {
+                Channel channel2 = Channel.builder()
+                                .id(2L)
+                                .name("backend")
+                                .description("Backend discussions")
+                                .type(ChannelType.PRIVATE)
+                                .workspace(workspace)
+                                .createdBy(user)
+                                .build();
 
-        User user = createUser();
-        Workspace workspace = createWorkspace(user);
-        CreateChannelRequest request = createChannelRequest();
+                when(workspaceRepository.findById(workspace.getId()))
+                                .thenReturn(Optional.of(workspace));
 
-        when(workspaceRepository.findById(workspace.getId()))
-                .thenReturn(Optional.of(workspace));
+                when(workspaceMemberRepository.existsByWorkspaceAndUser(workspace, user))
+                                .thenReturn(true);
 
-        when(workspaceMemberRepository.existsByWorkspaceAndUser(workspace, user))
-                .thenReturn(true);
+                when(channelRepository.findByWorkspace(workspace))
+                                .thenReturn(List.of(channel1, channel2));
 
-        when(channelRepository.existsByNameAndWorkspace(request.getName(), workspace))
-                .thenReturn(true);
+                List<ChannelResponse> response = channelService.getWorkspaceChannels(workspace.getId(), user);
 
-        assertThrows(
-                ChannelAlreadyExistsException.class,
-                () -> channelService.createChannel(workspace.getId(), request, user));
+                assertNotNull(response);
+                assertEquals(2, response.size());
 
-        verify(channelRepository, never()).save(any(Channel.class));
-        verify(channelMemberRepository, never()).save(any(ChannelMember.class));
-    }
+                assertEquals("general", response.get(0).getName());
+                assertEquals("backend", response.get(1).getName());
+
+                verify(workspaceRepository).findById(workspace.getId());
+                verify(workspaceMemberRepository)
+                                .existsByWorkspaceAndUser(workspace, user);
+                verify(channelRepository).findByWorkspace(workspace);
+        }
+
+        @Test
+        void shouldReturnEmptyListWhenWorkspaceHasNoChannels() {
+
+                User user = createUser();
+                Workspace workspace = createWorkspace(user);
+
+                when(workspaceRepository.findById(workspace.getId()))
+                                .thenReturn(Optional.of(workspace));
+
+                when(workspaceMemberRepository.existsByWorkspaceAndUser(workspace, user))
+                                .thenReturn(true);
+
+                when(channelRepository.findByWorkspace(workspace))
+                                .thenReturn(List.of());
+
+                List<ChannelResponse> response = channelService.getWorkspaceChannels(workspace.getId(), user);
+
+                assertNotNull(response);
+                assertTrue(response.isEmpty());
+
+                verify(channelRepository).findByWorkspace(workspace);
+        }
+
+        
 }
