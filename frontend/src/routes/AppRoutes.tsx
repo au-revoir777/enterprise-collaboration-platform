@@ -6,6 +6,7 @@ import WorkspaceDashboard from "../pages/Workspace/WorkspaceDashboard";
 import CreateWorkspace from "../pages/Workspace/CreateWorkspace";
 import CreateChannel from "../pages/Channel/CreateChannel";
 import WorkspaceDetails from "../pages/Workspace/WorkspaceDetails";
+import ChannelDetailsPage from "../pages/Channel/ChannelDetailsPage";
 
 function AppRoutes() {
   return (
@@ -30,6 +31,8 @@ function AppRoutes() {
         />
 
         <Route path="/workspaces/:workspaceId" element={<WorkspaceDetails />} />
+                <Route path="/channels/:channelId/messages" element={<ChannelDetailsPage />} />
+
       </Routes>
     </BrowserRouter>
   );

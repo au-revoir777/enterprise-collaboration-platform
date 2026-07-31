@@ -45,6 +45,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // Extract username from the token
             final String username = jwtService.extractUsername(jwt);
 
+            log.info("Authorization Header: {}", authHeader);
+            log.info("Extracted Username: {}", username);
+
             // Authenticate only if no authentication already exists
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
@@ -53,6 +56,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 // Validate token
                 if (jwtService.validateToken(jwt, userDetails)) {
 
+                    log.info("JWT validated successfully");
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             userDetails,
                             null,

@@ -15,5 +15,7 @@ public interface ChannelRepository extends JpaRepository<Channel, Long> {
 
     List<Channel> findByTypeAndWorkspace(ChannelType type, Workspace workspace);
 
+    Optional<Channel> findById(Long id);
+
     boolean existsByNameAndWorkspace(String name, Workspace workspace);
 }

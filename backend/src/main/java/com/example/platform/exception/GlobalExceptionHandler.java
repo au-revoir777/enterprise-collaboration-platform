@@ -6,104 +6,149 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import com.example.platform.dto.ErrorResponse;
-
 
 // MAY NEED REFACTORING LATER TO REMOVE REDUNDANCIES
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    @ExceptionHandler(EmailAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleEmailAlreadyExistsException(
-            EmailAlreadyExistsException ex) {
+        @ExceptionHandler(EmailAlreadyExistsException.class)
+        public ResponseEntity<ErrorResponse> handleEmailAlreadyExistsException(
+                        EmailAlreadyExistsException ex) {
 
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message(ex.getMessage())
-                .timestamp(LocalDateTime.now())
-                .build();
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .message(ex.getMessage())
+                                .timestamp(LocalDateTime.now())
+                                .build();
 
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(errorResponse);
-    }
+                return ResponseEntity
+                                .status(HttpStatus.CONFLICT)
+                                .body(errorResponse);
+        }
 
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidCredentialsException(
-            InvalidCredentialsException ex) {
+        @ExceptionHandler(InvalidCredentialsException.class)
+        public ResponseEntity<ErrorResponse> handleInvalidCredentialsException(
+                        InvalidCredentialsException ex) {
 
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message(ex.getMessage())
-                .timestamp(LocalDateTime.now())
-                .build();
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .message(ex.getMessage())
+                                .timestamp(LocalDateTime.now())
+                                .build();
 
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(errorResponse);
-    }
+                return ResponseEntity
+                                .status(HttpStatus.UNAUTHORIZED)
+                                .body(errorResponse);
+        }
 
-    @ExceptionHandler(UsernameAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleUsernameAlreadyExistsException(
-            UsernameAlreadyExistsException ex) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message(ex.getMessage())
-                .timestamp(LocalDateTime.now())
-                .build();
+        @ExceptionHandler(UsernameAlreadyExistsException.class)
+        public ResponseEntity<ErrorResponse> handleUsernameAlreadyExistsException(
+                        UsernameAlreadyExistsException ex) {
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .message(ex.getMessage())
+                                .timestamp(LocalDateTime.now())
+                                .build();
 
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(errorResponse);
-    }
+                return ResponseEntity
+                                .status(HttpStatus.CONFLICT)
+                                .body(errorResponse);
+        }
 
-    @ExceptionHandler(PasswordMismatchException.class)
-    public ResponseEntity<ErrorResponse> handlePasswordMismatchException(
-            PasswordMismatchException ex) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message(ex.getMessage())
-                .timestamp(LocalDateTime.now())
-                .build();
+        @ExceptionHandler(PasswordMismatchException.class)
+        public ResponseEntity<ErrorResponse> handlePasswordMismatchException(
+                        PasswordMismatchException ex) {
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .message(ex.getMessage())
+                                .timestamp(LocalDateTime.now())
+                                .build();
 
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(errorResponse);
-    }
+                return ResponseEntity
+                                .status(HttpStatus.BAD_REQUEST)
+                                .body(errorResponse);
+        }
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleUserNotFoundException(
-            UserNotFoundException ex) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message(ex.getMessage())
-                .timestamp(LocalDateTime.now())
-                .build();
+        @ExceptionHandler(UserNotFoundException.class)
+        public ResponseEntity<ErrorResponse> handleUserNotFoundException(
+                        UserNotFoundException ex) {
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .message(ex.getMessage())
+                                .timestamp(LocalDateTime.now())
+                                .build();
 
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(errorResponse);
-    }
+                return ResponseEntity
+                                .status(HttpStatus.NOT_FOUND)
+                                .body(errorResponse);
+        }
 
-    @ExceptionHandler(WorkspaceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleWorkspaceNotFoundException(
-            WorkspaceNotFoundException ex) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message(ex.getMessage())
-                .timestamp(LocalDateTime.now())
-                .build();
+        @ExceptionHandler(WorkspaceNotFoundException.class)
+        public ResponseEntity<ErrorResponse> handleWorkspaceNotFoundException(
+                        WorkspaceNotFoundException ex) {
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .message(ex.getMessage())
+                                .timestamp(LocalDateTime.now())
+                                .build();
 
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(errorResponse);
-    }
+                return ResponseEntity
+                                .status(HttpStatus.NOT_FOUND)
+                                .body(errorResponse);
+        }
 
-    @ExceptionHandler(ChannelAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleChannelAlreadyExistsException(
-            ChannelAlreadyExistsException ex) {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message(ex.getMessage())
-                .timestamp(LocalDateTime.now())
-                .build();
+        @ExceptionHandler(ChannelAlreadyExistsException.class)
+        public ResponseEntity<ErrorResponse> handleChannelAlreadyExistsException(
+                        ChannelAlreadyExistsException ex) {
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .message(ex.getMessage())
+                                .timestamp(LocalDateTime.now())
+                                .build();
 
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(errorResponse);
-    }
+                return ResponseEntity
+                                .status(HttpStatus.CONFLICT)
+                                .body(errorResponse);
+        }
+
+        @ExceptionHandler(ChannelDoesNotExistException.class)
+        public ResponseEntity<ErrorResponse> handleChannelDoesNotExistException(
+                        ChannelDoesNotExistException ex) {
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .message(ex.getMessage())
+                                .timestamp(LocalDateTime.now())
+                                .build();
+
+                return ResponseEntity
+                                .status(HttpStatus.NOT_FOUND)
+                                .body(errorResponse);
+        }
+
+        @ExceptionHandler(UserNotMemberOfChannelException.class)
+        public ResponseEntity<ErrorResponse> handleUserNotMemberOfChannelException(
+                        UserNotMemberOfChannelException ex) {
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .message(ex.getMessage())
+                                .timestamp(LocalDateTime.now())
+                                .build();
+
+                return ResponseEntity
+                                .status(HttpStatus.FORBIDDEN)
+                                .body(errorResponse);
+        }
+
+        @ExceptionHandler(MethodArgumentNotValidException.class)
+        public ResponseEntity<ErrorResponse> handleValidationException(
+                        MethodArgumentNotValidException ex) {
+
+                String message = ex.getBindingResult()
+                                .getFieldErrors()
+                                .stream()
+                                .findFirst()
+                                .map(field -> field.getDefaultMessage())
+                                .orElse("Validation failed.");
+
+                ErrorResponse errorResponse = ErrorResponse.builder()
+                                .message(message)
+                                .timestamp(LocalDateTime.now())
+                                .build();
+
+                return ResponseEntity.badRequest().body(errorResponse);
+        }
 }
