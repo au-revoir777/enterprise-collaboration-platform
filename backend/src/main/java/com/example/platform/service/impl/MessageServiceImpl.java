@@ -20,6 +20,8 @@ import com.example.platform.entity.User;
 
 import org.springframework.stereotype.Service;
 
+import java.util.*;
+
 @Service
 @RequiredArgsConstructor
 public class MessageServiceImpl implements MessageService{
@@ -63,6 +65,22 @@ public class MessageServiceImpl implements MessageService{
         Message message=createMessage(request, channel, user);
         Message savedMessage = messageRepository.save(message);
         return mapToMessageResponse(savedMessage);
+    }
+
+    @Override
+    public List<MessageResponse> getMessages(Long channelId, CustomUserDetails currentUser){
+        Channel channel = channelRepository.findById(channelId)
+        .orElseThrow(()->new ChannelDoesNotExistException("Channel does not exist."));
+        User user=currentUser.getUser();
+        if(!channelMemberRepository.existsByChannelAndUser(channel, user)){
+            throw new UserNotMemberOfChannelException("You don't have access to this channel.");
+        }
+
+        return messageRepository
+            .findByChannelOrderByCreatedAtAsc(channel)
+            .stream()
+            .map(this::mapToMessageResponse)
+            .toList();
     }
 
 }

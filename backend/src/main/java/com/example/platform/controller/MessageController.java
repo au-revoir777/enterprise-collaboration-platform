@@ -2,6 +2,7 @@ package com.example.platform.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,6 +18,7 @@ import com.example.platform.service.MessageService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 
 @RequestMapping("/api/channels")
@@ -35,5 +37,15 @@ public class MessageController {
         MessageResponse response = messageService.sendMessage(channelId, request, currentUser);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/{channelId}/messages")
+    public ResponseEntity<List<MessageResponse>> getMessages(
+            @PathVariable Long channelId,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+        List<MessageResponse> response = messageService.getMessages(channelId, currentUser);
+
+        return ResponseEntity.ok(response);
     }
 }

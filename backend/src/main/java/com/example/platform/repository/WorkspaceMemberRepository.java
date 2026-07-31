@@ -5,7 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.example.platform.entity.WorkspaceMember;
 import com.example.platform.entity.WorkspaceRole;
 import com.example.platform.entity.Workspace;
-import com.example.platform.dto.workspace.WorkspaceResponse;
 import com.example.platform.entity.User;
 
 

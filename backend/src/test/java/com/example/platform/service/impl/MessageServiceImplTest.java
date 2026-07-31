@@ -22,191 +22,313 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class MessageServiceImplTest {
 
-    @Mock
-    private MessageRepository messageRepository;
+        @Mock
+        private MessageRepository messageRepository;
 
-    @Mock
-    private ChannelRepository channelRepository;
+        @Mock
+        private ChannelRepository channelRepository;
 
-    @Mock
-    private ChannelMemberRepository channelMemberRepository;
+        @Mock
+        private ChannelMemberRepository channelMemberRepository;
 
-    @InjectMocks
-    private MessageServiceImpl messageService;
+        @InjectMocks
+        private MessageServiceImpl messageService;
 
-    private User user;
-    private Channel channel;
-    private CustomUserDetails currentUser;
+        private User user;
+        private Channel channel;
+        private CustomUserDetails currentUser;
 
-    @BeforeEach
-    void setUp() {
+        @BeforeEach
+        void setUp() {
 
-        user = User.builder()
-                .id(1L)
-                .username("roshan")
-                .displayName("Roshan")
-                .email("roshan@example.com")
-                .password("password")
-                .role(Role.USER)
-                .status(UserStatus.ONLINE)
-                .active(true)
-                .build();
+                user = User.builder()
+                                .id(1L)
+                                .username("roshan")
+                                .displayName("Roshan")
+                                .email("roshan@example.com")
+                                .password("password")
+                                .role(Role.USER)
+                                .status(UserStatus.ONLINE)
+                                .active(true)
+                                .build();
 
-        channel = Channel.builder()
-                .id(10L)
-                .name("general")
-                .type(ChannelType.PUBLIC)
-                .build();
+                channel = Channel.builder()
+                                .id(10L)
+                                .name("general")
+                                .type(ChannelType.PUBLIC)
+                                .build();
 
-        currentUser = new CustomUserDetails(user);
-    }
+                currentUser = new CustomUserDetails(user);
+        }
 
-    @Test
-    void shouldSendMessageSuccessfully() {
+        @Test
+        void shouldSendMessageSuccessfully() {
 
-        CreateMessageRequest request = CreateMessageRequest.builder()
-                .content("Hello everyone!")
-                .type(MessageType.TEXT)
-                .build();
+                CreateMessageRequest request = CreateMessageRequest.builder()
+                                .content("Hello everyone!")
+                                .type(MessageType.TEXT)
+                                .build();
 
-        Message savedMessage = Message.builder()
-                .id(100L)
-                .content(request.getContent())
-                .type(MessageType.TEXT)
-                .channel(channel)
-                .sender(user)
-                .edited(false)
-                .createdAt(LocalDateTime.now())
-                .build();
+                Message savedMessage = Message.builder()
+                                .id(100L)
+                                .content(request.getContent())
+                                .type(MessageType.TEXT)
+                                .channel(channel)
+                                .sender(user)
+                                .edited(false)
+                                .createdAt(LocalDateTime.now())
+                                .build();
 
-        when(channelRepository.findById(channel.getId()))
-                .thenReturn(Optional.of(channel));
+                when(channelRepository.findById(channel.getId()))
+                                .thenReturn(Optional.of(channel));
 
-        when(channelMemberRepository.existsByChannelAndUser(channel, user))
-                .thenReturn(true);
+                when(channelMemberRepository.existsByChannelAndUser(channel, user))
+                                .thenReturn(true);
 
-        when(messageRepository.save(any(Message.class)))
-                .thenReturn(savedMessage);
+                when(messageRepository.save(any(Message.class)))
+                                .thenReturn(savedMessage);
 
-        MessageResponse response = messageService.sendMessage(
-                channel.getId(),
-                request,
-                currentUser);
+                MessageResponse response = messageService.sendMessage(
+                                channel.getId(),
+                                request,
+                                currentUser);
 
-        assertNotNull(response);
+                assertNotNull(response);
 
-        assertEquals(savedMessage.getId(), response.getId());
-        assertEquals(savedMessage.getContent(), response.getContent());
-        assertEquals(savedMessage.getType(), response.getType());
+                assertEquals(savedMessage.getId(), response.getId());
+                assertEquals(savedMessage.getContent(), response.getContent());
+                assertEquals(savedMessage.getType(), response.getType());
 
-        assertEquals(user.getId(), response.getSenderId());
-        assertEquals(user.getUsername(), response.getSenderUsername());
-        assertEquals(user.getDisplayName(), response.getSenderDisplayName());
+                assertEquals(user.getId(), response.getSenderId());
+                assertEquals(user.getUsername(), response.getSenderUsername());
+                assertEquals(user.getDisplayName(), response.getSenderDisplayName());
 
-        verify(channelRepository).findById(channel.getId());
-        verify(channelMemberRepository)
-                .existsByChannelAndUser(channel, user);
-        verify(messageRepository).save(any(Message.class));
-    }
+                verify(channelRepository).findById(channel.getId());
+                verify(channelMemberRepository)
+                                .existsByChannelAndUser(channel, user);
+                verify(messageRepository).save(any(Message.class));
+        }
 
-    @Test
-    void shouldThrowExceptionWhenChannelDoesNotExist() {
+        @Test
+        void shouldThrowExceptionWhenChannelDoesNotExist() {
 
-        CreateMessageRequest request = CreateMessageRequest.builder()
-                .content("Hello")
-                .build();
+                CreateMessageRequest request = CreateMessageRequest.builder()
+                                .content("Hello")
+                                .build();
 
-        when(channelRepository.findById(channel.getId()))
-                .thenReturn(Optional.empty());
+                when(channelRepository.findById(channel.getId()))
+                                .thenReturn(Optional.empty());
 
-        assertThrows(
-                ChannelDoesNotExistException.class,
-                () -> messageService.sendMessage(
-                        channel.getId(),
-                        request,
-                        currentUser));
+                assertThrows(
+                                ChannelDoesNotExistException.class,
+                                () -> messageService.sendMessage(
+                                                channel.getId(),
+                                                request,
+                                                currentUser));
 
-        verify(channelRepository).findById(channel.getId());
+                verify(channelRepository).findById(channel.getId());
 
-        verify(channelMemberRepository, never())
-                .existsByChannelAndUser(any(), any());
+                verify(channelMemberRepository, never())
+                                .existsByChannelAndUser(any(), any());
 
-        verify(messageRepository, never())
-                .save(any());
-    }
+                verify(messageRepository, never())
+                                .save(any());
+        }
 
-    @Test
-    void shouldThrowExceptionWhenUserIsNotChannelMember() {
+        @Test
+        void shouldThrowExceptionWhenUserIsNotChannelMember() {
 
-        CreateMessageRequest request = CreateMessageRequest.builder()
-                .content("Hello")
-                .build();
+                CreateMessageRequest request = CreateMessageRequest.builder()
+                                .content("Hello")
+                                .build();
 
-        when(channelRepository.findById(channel.getId()))
-                .thenReturn(Optional.of(channel));
+                when(channelRepository.findById(channel.getId()))
+                                .thenReturn(Optional.of(channel));
 
-        when(channelMemberRepository.existsByChannelAndUser(channel, user))
-                .thenReturn(false);
+                when(channelMemberRepository.existsByChannelAndUser(channel, user))
+                                .thenReturn(false);
 
-        assertThrows(
-                UserNotMemberOfChannelException.class,
-                () -> messageService.sendMessage(
-                        channel.getId(),
-                        request,
-                        currentUser));
+                assertThrows(
+                                UserNotMemberOfChannelException.class,
+                                () -> messageService.sendMessage(
+                                                channel.getId(),
+                                                request,
+                                                currentUser));
 
-        verify(channelRepository).findById(channel.getId());
+                verify(channelRepository).findById(channel.getId());
 
-        verify(channelMemberRepository)
-                .existsByChannelAndUser(channel, user);
+                verify(channelMemberRepository)
+                                .existsByChannelAndUser(channel, user);
 
-        verify(messageRepository, never())
-                .save(any());
-    }
+                verify(messageRepository, never())
+                                .save(any());
+        }
 
-    @Test
-    void shouldDefaultMessageTypeToTextWhenTypeIsNull() {
+        @Test
+        void shouldDefaultMessageTypeToTextWhenTypeIsNull() {
 
-        CreateMessageRequest request = CreateMessageRequest.builder()
-                .content("Default message type")
-                .type(null)
-                .build();
+                CreateMessageRequest request = CreateMessageRequest.builder()
+                                .content("Default message type")
+                                .type(null)
+                                .build();
 
-        when(channelRepository.findById(channel.getId()))
-                .thenReturn(Optional.of(channel));
+                when(channelRepository.findById(channel.getId()))
+                                .thenReturn(Optional.of(channel));
 
-        when(channelMemberRepository.existsByChannelAndUser(channel, user))
-                .thenReturn(true);
+                when(channelMemberRepository.existsByChannelAndUser(channel, user))
+                                .thenReturn(true);
 
-        Message savedMessage = Message.builder()
-                .id(1L)
-                .content(request.getContent())
-                .type(MessageType.TEXT)
-                .channel(channel)
-                .sender(user)
-                .build();
+                Message savedMessage = Message.builder()
+                                .id(1L)
+                                .content(request.getContent())
+                                .type(MessageType.TEXT)
+                                .channel(channel)
+                                .sender(user)
+                                .build();
 
-        ArgumentCaptor<Message> captor =
-                ArgumentCaptor.forClass(Message.class);
+                ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
 
-        when(messageRepository.save(any(Message.class)))
-                .thenReturn(savedMessage);
+                when(messageRepository.save(any(Message.class)))
+                                .thenReturn(savedMessage);
 
-        messageService.sendMessage(
-                channel.getId(),
-                request,
-                currentUser);
+                messageService.sendMessage(
+                                channel.getId(),
+                                request,
+                                currentUser);
 
-        verify(messageRepository).save(captor.capture());
+                verify(messageRepository).save(captor.capture());
 
-        Message captured = captor.getValue();
+                Message captured = captor.getValue();
 
-        assertEquals(MessageType.TEXT, captured.getType());
-    }
+                assertEquals(MessageType.TEXT, captured.getType());
+        }
+
+        @Test
+        void shouldReturnMessageHistorySuccessfully() {
+
+                Message firstMessage = Message.builder()
+                                .id(1L)
+                                .content("Hello")
+                                .type(MessageType.TEXT)
+                                .sender(user)
+                                .channel(channel)
+                                .edited(false)
+                                .createdAt(LocalDateTime.now().minusMinutes(2))
+                                .build();
+
+                Message secondMessage = Message.builder()
+                                .id(2L)
+                                .content("How are you?")
+                                .type(MessageType.TEXT)
+                                .sender(user)
+                                .channel(channel)
+                                .edited(false)
+                                .createdAt(LocalDateTime.now())
+                                .build();
+
+                when(channelRepository.findById(channel.getId()))
+                                .thenReturn(Optional.of(channel));
+
+                when(channelMemberRepository.existsByChannelAndUser(channel, user))
+                                .thenReturn(true);
+
+                when(messageRepository.findByChannelOrderByCreatedAtAsc(channel))
+                                .thenReturn(List.of(firstMessage, secondMessage));
+
+                List<MessageResponse> responses = messageService.getMessages(channel.getId(), currentUser);
+
+                assertNotNull(responses);
+                assertEquals(2, responses.size());
+
+                assertEquals("Hello", responses.get(0).getContent());
+                assertEquals("How are you?", responses.get(1).getContent());
+
+                verify(channelRepository).findById(channel.getId());
+
+                verify(channelMemberRepository)
+                                .existsByChannelAndUser(channel, user);
+
+                verify(messageRepository)
+                                .findByChannelOrderByCreatedAtAsc(channel);
+        }
+
+        @Test
+        void shouldThrowExceptionWhenRetrievingMessagesFromNonExistingChannel() {
+
+                when(channelRepository.findById(channel.getId()))
+                                .thenReturn(Optional.empty());
+
+                assertThrows(
+                                ChannelDoesNotExistException.class,
+                                () -> messageService.getMessages(
+                                                channel.getId(),
+                                                currentUser));
+
+                verify(channelRepository).findById(channel.getId());
+
+                verify(channelMemberRepository, never())
+                                .existsByChannelAndUser(any(), any());
+
+                verify(messageRepository, never())
+                                .findByChannelOrderByCreatedAtAsc(any());
+        }
+
+        @Test
+        void shouldThrowExceptionWhenUserRetrievesMessagesWithoutMembership() {
+
+                when(channelRepository.findById(channel.getId()))
+                                .thenReturn(Optional.of(channel));
+
+                when(channelMemberRepository.existsByChannelAndUser(channel, user))
+                                .thenReturn(false);
+
+                assertThrows(
+                                UserNotMemberOfChannelException.class,
+                                () -> messageService.getMessages(
+                                                channel.getId(),
+                                                currentUser));
+
+                verify(channelRepository).findById(channel.getId());
+
+                verify(channelMemberRepository)
+                                .existsByChannelAndUser(channel, user);
+
+                verify(messageRepository, never())
+                                .findByChannelOrderByCreatedAtAsc(any());
+        }
+
+        @Test
+        void shouldReturnEmptyMessageHistoryWhenChannelHasNoMessages() {
+
+                when(channelRepository.findById(channel.getId()))
+                                .thenReturn(Optional.of(channel));
+
+                when(channelMemberRepository.existsByChannelAndUser(channel, user))
+                                .thenReturn(true);
+
+                when(messageRepository.findByChannelOrderByCreatedAtAsc(channel))
+                                .thenReturn(List.of());
+
+                List<MessageResponse> responses = messageService.getMessages(channel.getId(), currentUser);
+
+                assertNotNull(responses);
+                assertTrue(responses.isEmpty());
+
+                verify(channelRepository).findById(channel.getId());
+
+                verify(channelMemberRepository)
+                                .existsByChannelAndUser(channel, user);
+
+                verify(messageRepository)
+                                .findByChannelOrderByCreatedAtAsc(channel);
+        }
 }

@@ -16,6 +16,17 @@ class MessageService{
 
         return response.data;
     }
+
+    async getMessages(
+        channelId: number
+    ): Promise<MessageResponse[]> {
+
+        const response = await api.get<MessageResponse[]>(
+            `/channels/${channelId}/messages`
+        );
+
+        return response.data;
+    }
 }
 
 export default new MessageService;
