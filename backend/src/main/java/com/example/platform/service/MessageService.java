@@ -7,6 +7,7 @@ import com.example.platform.security.CustomUserDetails;
 import java.util.List;
 
 public interface MessageService {
-    MessageResponse sendMessage( Long channelId, CreateMessageRequest request, CustomUserDetails currentUser);
+    MessageResponse sendMessage(Long channelId, CreateMessageRequest request, CustomUserDetails currentUser);
     List<MessageResponse> getMessages(Long channelId, CustomUserDetails currentUser);
+    MessageResponse sendMessage(Long channelId, CreateMessageRequest request, String username);
 } 
