@@ -4,8 +4,10 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
 import io.jsonwebtoken.Jwts;
-
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 
 import java.util.function.Function;
 
@@ -27,6 +29,7 @@ public class JwtService {
 
     @Value("${jwt.expiration}")
     private long jwtExpiration;
+
 
     // convert secret string into secret Key that can be used by the library
     private SecretKey getSigningKey() {
@@ -50,9 +53,17 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
+    // Returns null if the jwt cannot be parsed or validated
     public String extractUsername(String token) {
+        try{
         return extractClaim(token, Claims::getSubject);
-
+        } catch (UnsupportedJwtException 
+            | MalformedJwtException 
+            | SecurityException 
+            | ExpiredJwtException
+            | IllegalArgumentException e){
+            return null;
+        }
     }
 
     public Date extractExpiration(String token) {
@@ -63,7 +74,7 @@ public class JwtService {
 
         return Jwts
                 .parser()
-                .verifyWith((SecretKey) getSigningKey())
+                .verifyWith(getSigningKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
@@ -74,8 +85,10 @@ public class JwtService {
             String token,
             UserDetails userDetails) {
 
+        //optimisation needed
         String username = extractUsername(token);
-
+        if(username==null)
+            return false;
         return username.equals(userDetails.getUsername())
                 && !isTokenExpired(token);
 

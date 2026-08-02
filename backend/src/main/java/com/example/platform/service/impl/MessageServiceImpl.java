@@ -2,9 +2,11 @@ package com.example.platform.service.impl;
 
 import com.example.platform.dto.message.CreateMessageRequest;
 import com.example.platform.dto.message.MessageResponse;
+import com.example.platform.dto.websocket.ChatMessageRequest;
 import com.example.platform.repository.ChannelMemberRepository;
 import com.example.platform.repository.ChannelRepository;
 import com.example.platform.repository.MessageRepository;
+import com.example.platform.repository.UserRepository;
 import com.example.platform.security.CustomUserDetails;
 import com.example.platform.service.MessageService;
 
@@ -19,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import com.example.platform.entity.User;
 
 import org.springframework.stereotype.Service;
+import com.example.platform.exception.UserNotFoundException;
 
 import java.util.*;
 
@@ -28,8 +31,9 @@ public class MessageServiceImpl implements MessageService{
     private final MessageRepository messageRepository;
     private final ChannelRepository channelRepository;
     private final ChannelMemberRepository channelMemberRepository;
+    private final UserRepository userRepository;
 
-    private Message createMessage(CreateMessageRequest request, Channel channel, User user){
+    private Message mapToMessage(CreateMessageRequest request, Channel channel, User user){
         return Message.builder()
         .content(request.getContent())
         .type(request.getType() == null
@@ -38,6 +42,17 @@ public class MessageServiceImpl implements MessageService{
         .channel(channel)
         .sender(user)
         .build();
+    }
+
+      private MessageResponse sendMessage(Long channelId, CreateMessageRequest request, User user) {
+        Channel channel=channelRepository.findById(channelId)
+        .orElseThrow(()->new ChannelDoesNotExistException("Channel does not exist."));
+        if(!channelMemberRepository.existsByChannelAndUser(channel, user)){
+            throw new UserNotMemberOfChannelException("You don't have access to this channel.");
+        }
+        Message message=mapToMessage(request, channel, user);
+        Message savedMessage = messageRepository.save(message);
+        return mapToMessageResponse(savedMessage);
     }
 
     private MessageResponse mapToMessageResponse(Message message){
@@ -55,16 +70,7 @@ public class MessageServiceImpl implements MessageService{
 
     @Override
     public MessageResponse sendMessage(Long channelId, CreateMessageRequest request, CustomUserDetails currentUser) {
-        Channel channel=channelRepository.findById(channelId)
-        .orElseThrow(()->new ChannelDoesNotExistException("Channel does not exist."));
-        User user=currentUser.getUser();
-        if(!channelMemberRepository.existsByChannelAndUser(channel, user)){
-            throw new UserNotMemberOfChannelException("You don't have access to this channel.");
-        }
-
-        Message message=createMessage(request, channel, user);
-        Message savedMessage = messageRepository.save(message);
-        return mapToMessageResponse(savedMessage);
+        return sendMessage(channelId, request, currentUser.getUser());
     }
 
     @Override
@@ -81,6 +87,19 @@ public class MessageServiceImpl implements MessageService{
             .stream()
             .map(this::mapToMessageResponse)
             .toList();
+    }
+
+    @Override
+    public MessageResponse sendMessage(ChatMessageRequest request, String username){
+        CreateMessageRequest createMessageRequest = CreateMessageRequest.builder()
+        .content(request.getContent())
+        .type(request.getType())
+        .build();
+
+        User user = userRepository.findByUsername(username)
+        .orElseThrow(()->new UserNotFoundException("Username not found"));
+
+        return sendMessage(request.getChannelId(), createMessageRequest, user);
     }
 
 }

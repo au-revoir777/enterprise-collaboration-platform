@@ -2,12 +2,15 @@ package com.example.platform.service.impl;
 
 import com.example.platform.dto.message.CreateMessageRequest;
 import com.example.platform.dto.message.MessageResponse;
+import com.example.platform.dto.websocket.ChatMessageRequest;
 import com.example.platform.entity.*;
 import com.example.platform.exception.ChannelDoesNotExistException;
+import com.example.platform.exception.UserNotFoundException;
 import com.example.platform.exception.UserNotMemberOfChannelException;
 import com.example.platform.repository.ChannelMemberRepository;
 import com.example.platform.repository.ChannelRepository;
 import com.example.platform.repository.MessageRepository;
+import com.example.platform.repository.UserRepository;
 import com.example.platform.security.CustomUserDetails;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +42,9 @@ class MessageServiceImplTest {
 
         @Mock
         private ChannelMemberRepository channelMemberRepository;
+
+        @Mock
+        private UserRepository userRepository;
 
         @InjectMocks
         private MessageServiceImpl messageService;
@@ -330,5 +336,63 @@ class MessageServiceImplTest {
 
                 verify(messageRepository)
                                 .findByChannelOrderByCreatedAtAsc(channel);
+        }
+
+        @Test
+        void shouldSendMessageFromWebSocketRequest() {
+                ChatMessageRequest request = ChatMessageRequest.builder()
+                                .channelId(channel.getId())
+                                .content("Hello everyone!")
+                                .type(MessageType.TEXT)
+                                .build();
+
+                when(userRepository.findByUsername("roshan")).thenReturn(Optional.of(user));
+                when(channelRepository.findById(channel.getId())).thenReturn(Optional.of(channel));
+                when(channelMemberRepository.existsByChannelAndUser(channel, user)).thenReturn(true);
+                Message savedMessage = Message.builder()
+                                .id(1L)
+                                .content(request.getContent())
+                                .type(MessageType.TEXT)
+                                .channel(channel)
+                                .sender(user)
+                                .build();
+
+                when(messageRepository.save(any(Message.class)))
+                                .thenReturn(savedMessage);
+
+                ArgumentCaptor<Message> messageCaptor = ArgumentCaptor.forClass(Message.class);
+
+                MessageResponse response = messageService.sendMessage(request, "roshan");
+                assertEquals("Hello everyone!", response.getContent());
+                assertEquals("roshan", response.getSenderUsername());
+                assertEquals(MessageType.TEXT, response.getType());
+                
+                verify(messageRepository).save(messageCaptor.capture());
+
+                Message message = messageCaptor.getValue();
+
+                assertEquals(request.getContent(), message.getContent());
+                assertEquals(request.getType(), message.getType());
+                assertEquals(channel, message.getChannel());
+                assertEquals(user, message.getSender());
+
+                verify(channelRepository).findById(channel.getId());
+                verify(userRepository).findByUsername("roshan");
+        }
+
+        @Test
+        void shouldThrowUserNotFoundExceptionWhenUsernameDoesNotExist() {
+                ChatMessageRequest request = ChatMessageRequest.builder()
+                                .channelId(channel.getId())
+                                .content("Hello everyone!")
+                                .type(MessageType.TEXT)
+                                .build();
+
+                when(userRepository.findByUsername("roshan")).thenReturn(Optional.empty());
+                assertThrows(UserNotFoundException.class, ()-> messageService.sendMessage(request, "roshan"));
+
+                verifyNoInteractions(channelRepository);
+                verifyNoInteractions(channelMemberRepository);
+                verifyNoInteractions(messageRepository);
         }
 }

@@ -1,9 +1,10 @@
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import MessageService from "../../services/MessageService";
+import WebSocketService from "../../services/WebSocketService";
 
-import type { CreateMessageRequest } from "../../types/CreateMessageRequest";
+import type { ChatMessageRequest } from "../../types/ChatMessageRequest";
 import type { MessageResponse } from "../../types/MessageResponse";
 
 function ChannelDetailsPage() {
@@ -12,42 +13,66 @@ function ChannelDetailsPage() {
   const [messages, setMessages] = useState<MessageResponse[]>([]);
   const [content, setContent] = useState("");
 
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!channelId) {
       return;
     }
 
-    const loadMessages = async () => {
+    const initialize = async () => {
       try {
         const history = await MessageService.getMessages(Number(channelId));
 
         setMessages(history);
+
+        await WebSocketService.connect();
+
+        WebSocketService.subscribe(
+          Number(channelId),
+          (message: MessageResponse) => {
+            setMessages((previous) => {
+              if (previous.some((m) => m.id === message.id)) {
+                return previous;
+              }
+
+              return [...previous, message];
+            });
+          },
+        );
       } catch (error) {
         console.error(error);
       }
     };
 
-    loadMessages();
+    initialize();
   }, [channelId]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+  }, [messages]);
+
+  useEffect(() => {
+    return () => {
+      WebSocketService.disconnect();
+    };
+  }, []);
 
   async function handleSendMessage() {
     if (!channelId || content.trim() === "") {
       return;
     }
 
-    const request: CreateMessageRequest = {
+    const request: ChatMessageRequest = {
+      channelId: Number(channelId),
       content,
       type: "TEXT",
     };
 
     try {
-      const message = await MessageService.sendMessage(
-        Number(channelId),
-        request,
-      );
-
-      setMessages((previous) => [...previous, message]);
-
+      WebSocketService.send(request);
       setContent("");
     } catch (error) {
       console.error(error);
@@ -58,7 +83,9 @@ function ChannelDetailsPage() {
   return (
     <div className="flex flex-col h-screen">
       <div className="border-b p-4">
-        <h1 className="text-2xl font-bold">Channel #{channelId}</h1>
+        <h1 className="text-2xl font-bold">
+          Channel #{channelId}
+        </h1>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -66,13 +93,20 @@ function ChannelDetailsPage() {
           <p className="text-gray-500">No messages yet.</p>
         ) : (
           messages.map((message) => (
-            <div key={message.id} className="border rounded-lg p-3">
-              <div className="font-semibold">{message.senderDisplayName}</div>
+            <div
+              key={message.id}
+              className="border rounded-lg p-3"
+            >
+              <div className="font-semibold">
+                {message.senderDisplayName}
+              </div>
 
               <div>{message.content}</div>
             </div>
           ))
         )}
+
+        <div ref={messagesEndRef} />
       </div>
 
       <div className="border-t p-4 flex gap-3">
