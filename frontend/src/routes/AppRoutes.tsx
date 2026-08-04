@@ -7,6 +7,7 @@ import CreateWorkspace from "../pages/Workspace/CreateWorkspace";
 import CreateChannel from "../pages/Channel/CreateChannel";
 import WorkspaceDetails from "../pages/Workspace/WorkspaceDetails";
 import ChannelDetailsPage from "../pages/Channel/ChannelDetailsPage";
+import ProtectedLayout from "../layouts/ProtectedLayout";
 
 function AppRoutes() {
   return (
@@ -21,18 +22,34 @@ function AppRoutes() {
         {/* Login Page */}
         <Route path="/login" element={<Login />} />
 
-        {/* Dashboard */}
-        <Route path="/dashboard" element={<WorkspaceDashboard />} />
+        <Route element={<ProtectedLayout />}>
 
-        <Route path="/workspaces/new" element={<CreateWorkspace />} />
-        <Route
-          path="/workspaces/:workspaceId/channels/new"
-          element={<CreateChannel />}
-        />
+    <Route
+        path="/dashboard"
+        element={<WorkspaceDashboard />}
+    />
 
-        <Route path="/workspaces/:workspaceId" element={<WorkspaceDetails />} />
-                <Route path="/channels/:channelId/messages" element={<ChannelDetailsPage />} />
+    <Route
+        path="/workspaces/new"
+        element={<CreateWorkspace />}
+    />
 
+    <Route
+        path="/workspaces/:workspaceId"
+        element={<WorkspaceDetails />}
+    />
+
+    <Route
+        path="/workspaces/:workspaceId/channels/new"
+        element={<CreateChannel />}
+    />
+
+    <Route
+        path="/channels/:channelId/messages"
+        element={<ChannelDetailsPage />}
+    />
+
+</Route>
       </Routes>
     </BrowserRouter>
   );
