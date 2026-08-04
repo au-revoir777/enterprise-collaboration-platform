@@ -4,6 +4,7 @@ import type { RegisterRequest } from "../types/RegisterRequest";
 import type { UserResponse } from "../types/UserResponse";
 import type { LoginRequest } from "../types/LoginRequest";
 import type { LoginResponse } from "../types/LoginResponse";
+import { useAuthStore } from "../stores/authStore";
 
 class AuthService {
     async register(request: RegisterRequest): Promise<UserResponse> {
@@ -13,8 +14,11 @@ class AuthService {
 
     async login(request: LoginRequest): Promise<LoginResponse> {
         const response = await api.post<LoginResponse>("/auth/login",request);
-        localStorage.setItem("token", response.data.token);
-        localStorage.setItem("user", JSON.stringify(response.data.userResponse));
+
+        const authStore = useAuthStore.getState();
+
+        authStore.setToken(response.data.token);
+        authStore.setUser(response.data.userResponse);
         return response.data;
     }
 
@@ -24,8 +28,7 @@ class AuthService {
     }
 
     logout(): void {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        useAuthStore.getState().logout();
     }
 }
 

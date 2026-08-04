@@ -26,8 +26,6 @@ function ChannelDetailsPage() {
 
         setMessages(history);
 
-        await WebSocketService.connect();
-
         WebSocketService.subscribe(
           Number(channelId),
           (message: MessageResponse) => {
@@ -54,12 +52,6 @@ function ChannelDetailsPage() {
     });
   }, [messages]);
 
-  useEffect(() => {
-    return () => {
-      WebSocketService.disconnect();
-    };
-  }, []);
-
   async function handleSendMessage() {
     if (!channelId || content.trim() === "") {
       return;
@@ -73,6 +65,7 @@ function ChannelDetailsPage() {
 
     try {
       WebSocketService.send(request);
+
       setContent("");
     } catch (error) {
       console.error(error);
